@@ -58,7 +58,7 @@ def auto_vendor(
         "-p",
         help="Python version to use for vendoring (must be 3.12 for Cloudflare Workers)",
     ),
-):
+) -> None:
     """
     Automatically detect and vendor packages for Cloudflare Workers.
 
@@ -266,7 +266,7 @@ def vendor(
         "--skip-built-in/--include-built-in",
         help="Skip built-in Cloudflare packages in requirements.txt",
     ),
-):
+) -> None:
     """
     Vendor Python packages for Cloudflare Workers.
 
@@ -378,7 +378,7 @@ def generate_requirements(requirements_file: Path) -> None:
 
 
 @app.command()
-def list_built_in():
+def list_built_in() -> None:
     """List all built-in packages available in Cloudflare Workers."""
     console.print(
         Panel.fit(
@@ -403,7 +403,7 @@ def isbuiltin(
         "-v",
         help="Path to the vendor.txt file",
     ),
-):
+) -> None:
     """Check if a package is built-in or needs to be vendored.
 
     If the package is not built-in, it can be automatically added to vendor.txt with the --add flag.
@@ -512,7 +512,7 @@ def isbuiltin(
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main entry point for the CLI."""
     app()
 

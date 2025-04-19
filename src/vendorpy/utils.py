@@ -485,14 +485,14 @@ def add_vendor_rule_to_config(config_path: Path, config_type: str) -> bool:
                 # Find the end of the rules array
                 end_pos = rules_match.end()
                 # Insert the vendor rule at the beginning of the rules array
-                vendor_rule = """
+                vendor_rule_str = """
   {
     "globs": ["vendor/**"],
     "type": "Data",
     "fallthrough": true
   },"""
                 # Insert the rule after the opening bracket of the rules array
-                new_content = content[:end_pos] + vendor_rule + content[end_pos:]
+                new_content = content[:end_pos] + vendor_rule_str + content[end_pos:]
             else:
                 # If there's no rules array, we'll need to add it
                 # Find the last closing brace
@@ -501,7 +501,7 @@ def add_vendor_rule_to_config(config_path: Path, config_type: str) -> bool:
                     # Invalid JSON
                     return False
 
-                vendor_rule = """
+                vendor_rule_str = """
   "rules": [
     {
       "globs": ["vendor/**"],
@@ -513,10 +513,12 @@ def add_vendor_rule_to_config(config_path: Path, config_type: str) -> bool:
                 if content[:last_brace].rstrip().endswith("}") or content[
                     :last_brace
                 ].rstrip().endswith("]"):
-                    vendor_rule = "," + vendor_rule
+                    vendor_rule_str = "," + vendor_rule_str
 
                 # Insert the rules array before the final closing brace
-                new_content = content[:last_brace] + vendor_rule + content[last_brace:]
+                new_content = (
+                    content[:last_brace] + vendor_rule_str + content[last_brace:]
+                )
 
             # Write the updated JSONC file
             with open(config_path, "w") as f:
