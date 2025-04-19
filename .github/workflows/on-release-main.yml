@@ -66,12 +66,14 @@ jobs:
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
 
-      - name: Configure Git identity
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Build documentation
+        run: uv run mkdocs build
 
-      - name: Deploy documentation
-        run: uv run mkdocs gh-deploy --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy documentation with peaceiris/actions-gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          # Optional: configure user name and email for the commit
+          # user_name: 'github-actions[bot]'
+          # user_email: '41898282+github-actions[bot]@users.noreply.github.com'
