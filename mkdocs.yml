@@ -2,7 +2,7 @@ site_name: vendorpy
 repo_url: https://github.com/bitnom/vendorpy
 site_url: https://bitnom.github.io/vendorpy
 site_description: Cloudflare Python workers vendoring
-site_author: [C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cbitnom
+site_author: bitnom
 edit_uri: edit/main/docs/
 repo_name: bitnom/vendorpy
 copyright: Maintained by <a href="https://bitnom.com">bitnom</a>.
