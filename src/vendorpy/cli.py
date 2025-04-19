@@ -187,34 +187,50 @@ def isbuiltin(
     package_name: str = typer.Argument(..., help="Name of the package to check"),  # noqa: B008
 ):
     """Check if a package is built-in or needs to be vendored."""
-    # Normalize package name (convert to lowercase and replace dashes with underscores)
-    normalized_name = package_name.lower().replace("-", "_")
+    try:
+        # Validate package name
+        if not package_name or not package_name.strip():
+            console.print("[bold red]Error:[/bold red] Package name cannot be empty.")
+            sys.exit(1)
 
-    # Check if the package is in the built-in packages list
-    is_built_in = any(
-        pkg.lower().replace("-", "_") == normalized_name
-        for pkg in CLOUDFLARE_BUILT_IN_PACKAGES
-    )
+        # Normalize package name (convert to lowercase and replace dashes with underscores)
+        normalized_name = package_name.lower().replace("-", "_")
 
-    if is_built_in:
-        # Find the exact package name with correct casing
-        exact_name = next(
-            pkg
+        # Check if the package is in the built-in packages list
+        is_built_in = any(
+            pkg.lower().replace("-", "_") == normalized_name
             for pkg in CLOUDFLARE_BUILT_IN_PACKAGES
-            if pkg.lower().replace("-", "_") == normalized_name
         )
-        console.print(
-            f"[bold green]✓ {exact_name}[/bold green] is a built-in package in Cloudflare Workers."
-        )
-        console.print("You can use it directly without vendoring.")
-    else:
-        console.print(
-            f"[bold yellow]! {package_name}[/bold yellow] is NOT a built-in package in Cloudflare Workers."
-        )
-        console.print(
-            "You need to vendor this package. Add it to your vendor.txt file and run:"
-        )
-        console.print("\n  [bold]vendorpy vendor[/bold]\n", style="blue")
+
+        if is_built_in:
+            try:
+                # Find the exact package name with correct casing
+                exact_name = next(
+                    pkg
+                    for pkg in CLOUDFLARE_BUILT_IN_PACKAGES
+                    if pkg.lower().replace("-", "_") == normalized_name
+                )
+                console.print(
+                    f"[bold green]✓ {exact_name}[/bold green] is a built-in package in Cloudflare Workers."
+                )
+                console.print("You can use it directly without vendoring.")
+            except StopIteration:
+                # This should not happen, but handle it just in case
+                console.print(
+                    f"[bold green]✓ {package_name}[/bold green] is a built-in package in Cloudflare Workers."
+                )
+                console.print("You can use it directly without vendoring.")
+        else:
+            console.print(
+                f"[bold yellow]! {package_name}[/bold yellow] is NOT a built-in package in Cloudflare Workers."
+            )
+            console.print(
+                "You need to vendor this package. Add it to your vendor.txt file and run:"
+            )
+            console.print("\n  [bold]vendorpy vendor[/bold]\n", style="blue")
+    except Exception as e:
+        console.print(f"[bold red]Error checking package:[/bold red] {e!s}")
+        sys.exit(1)
 
 
 def main():
