@@ -1,0 +1,1 @@
+::: vendorpy.foo
