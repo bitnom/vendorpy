@@ -19,6 +19,11 @@ Vendorpy is a command-line tool that automates the process of vendoring Python p
 pip install vendorpy
 ```
 
+### Requirements
+
+- Python 3.12 or higher (required for Cloudflare Workers compatibility)
+- `uv` package manager (for generating requirements.txt)
+
 ## Usage
 
 ### Vendor Packages
@@ -84,6 +89,30 @@ Options:
                                   requirements.txt  [default: skip-built-in]
   --help                          Show this message and exit.
 ```
+
+## Error Handling and Troubleshooting
+
+Vendorpy includes comprehensive error handling to help diagnose and resolve issues:
+
+### Common Issues
+
+1. **Python Version**: Ensure you have Python 3.12 installed as it's required for Cloudflare Workers compatibility.
+
+2. **Missing Dependencies**: If you encounter errors about missing dependencies, make sure `uv` is installed:
+   ```bash
+   pip install uv
+   ```
+
+3. **Empty vendor.txt**: Your vendor.txt file must contain at least one package to vendor.
+
+4. **Package Not Found**: If a package can't be found, check if it's available on PyPI or if it's a built-in package:
+   ```bash
+   vendorpy isbuiltin <package_name>
+   ```
+
+5. **Permission Issues**: If you encounter permission errors when creating virtual environments, try running the command with appropriate permissions.
+
+The tool provides detailed error messages to help diagnose issues. If you encounter persistent problems, please open an issue on GitHub.
 
 ## Getting started with development
 
