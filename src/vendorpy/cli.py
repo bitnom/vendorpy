@@ -15,7 +15,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from vendorpy.utils import (
+from .utils import (
     CLOUDFLARE_BUILT_IN_PACKAGES,
     configure_wrangler_for_vendor,
     create_pyodide_env,
