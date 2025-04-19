@@ -11,18 +11,12 @@ Cloudflare Python workers vendoring
 - **Github repository**: <https://github.com/bitnom/vendorpy/>
 - **Documentation** <https://bitnom.github.io/vendorpy/>
 
-## Getting started with your project
+## Getting started with development
 
-### 1. Create a New Repository
-
-First, create a repository on GitHub with the same name as this project, and then run the following commands:
+### 1. Clone Repository
 
 ```bash
-git init -b main
-git add .
-git commit -m "init commit"
-git remote add origin git@github.com:bitnom/vendorpy.git
-git push -u origin main
+git clone https://github.com/bitnom/vendorpy.git
 ```
 
 ### 2. Set Up Your Development Environment
@@ -53,7 +47,6 @@ git commit -m 'Fix formatting issues'
 git push origin main
 ```
 
-You are now ready to start development on your project!
 The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
 
 To finalize the set-up for publishing to PyPI, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/publishing/#set-up-for-pypi).
