@@ -1,0 +1,8 @@
+# Ruff configuration file
+
+# Ignore S603 warnings for subprocess calls in our code
+# We're using subprocess with fixed command lists and not using shell=True
+# which makes these calls safe
+[lint.per-file-ignores]
+"src/vendorpy/cli.py" = ["S603"]
+"src/vendorpy/utils.py" = ["S603"]

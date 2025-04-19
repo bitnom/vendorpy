@@ -5,16 +5,17 @@ description = "Cloudflare Python workers vendoring CLI tool."
 authors = [{ name = "bitnom", email = "14287229+bitnom@users.noreply.github.com" }]
 readme = "README.md"
 keywords = ['python']
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "click>=8.1.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+]
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
@@ -23,6 +24,9 @@ Homepage = "https://bitnom.github.io/vendorpy/"
 Repository = "https://github.com/bitnom/vendorpy"
 Documentation = "https://bitnom.github.io/vendorpy/"
 
+[project.scripts]
+vendorpy = "vendorpy.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=7.2.0",
@@ -30,7 +34,7 @@ dev = [
     "tox-uv>=1.11.3",
     "deptry>=0.23.0",
     "mypy>=0.991",
-    
+
     "ruff>=0.11.5",
     "mkdocs>=1.4.2",
     "mkdocs-material>=8.5.10",
@@ -106,5 +110,3 @@ ignore = [
 
 [tool.ruff.format]
 preview = true
-
-
