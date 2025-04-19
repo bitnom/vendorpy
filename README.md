@@ -52,6 +52,21 @@ To see all built-in packages available in Cloudflare Workers:
 vendorpy list-built-in
 ```
 
+### Check if a Package is Built-in
+
+To check if a specific package is built-in or needs to be vendored:
+
+```bash
+vendorpy isbuiltin <package_name>
+```
+
+For example:
+
+```bash
+vendorpy isbuiltin fastapi  # Built-in package
+vendorpy isbuiltin flask    # Not built-in, needs vendoring
+```
+
 ### Command Options
 
 ```
