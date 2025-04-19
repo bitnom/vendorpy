@@ -26,28 +26,76 @@ pip install vendorpy
 
 ## Usage
 
-### Vendor Packages
+### Automatic Vendoring (Recommended)
 
-To vendor packages for Cloudflare Workers:
+The easiest way to vendor packages is using the `auto-vendor` command, which automatically detects which packages need to be vendored and handles the entire process in a single step:
 
-1. Create a `vendor.txt` file with the packages you want to vendor:
+```bash
+vendorpy auto-vendor
+```
+
+This will:
+1. Analyze your project dependencies using the lockfile
+2. Determine which packages are built-in vs. which need vendoring
+3. Create the vendor.txt file automatically
+4. Generate a requirements.txt file with built-in packages pruned
+5. Set up the necessary virtual environments
+6. Vendor the required packages to src/vendor
+
+Example output:
+```
+╭───────── Step 1: Package Detection ─────────╮
+│ Detecting packages that need to be vendored │
+╰─────────────────────────────────────────────╯
+  Analyzing project dependencies...
+
+                    Package Analysis Results
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ Package Type                     ┃ Count ┃ Packages          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ Need Vendoring                   │ 2     │ jinja2, markupsafe│
+│ Built-in (No Vendoring Required) │ 1     │ fastapi           │
+└──────────────────────────────────┴───────┴───────────────────┘
+
+╭────────── Step 2: Vendor File Creation ──────────╮
+│ Creating vendor.txt with 2 packages that need    │
+│ vendoring                                        │
+╰────────────────────────────────────────────────────╯
+✅ Created vendor.txt
+
+...
+```
+
+### Manual Vendoring Process
+
+If you prefer more control, you can also use the individual commands:
+
+#### 1. Check Which Packages Need Vendoring
+
+```bash
+# Check if a package is built-in or needs to be vendored
+vendorpy isbuiltin <package_name>
+
+# For example
+vendorpy isbuiltin jinja2  # Not built-in, needs vendoring
+vendorpy isbuiltin fastapi  # Built-in, no need to vendor
+```
+
+#### 2. Create a Vendor.txt File
+
+Create a `vendor.txt` file with the packages that need to be vendored:
 
 ```
 jinja2
 markupsafe
-# Add other packages you need to vendor
+# Add other packages that need to be vendored
 ```
 
-2. Run the vendorpy command:
+#### 3. Run the Vendor Command
 
 ```bash
 vendorpy vendor --vendor-file vendor.txt --vendor-dir src/vendor
 ```
-
-This will:
-- Generate a `requirements.txt` file with all built-in Cloudflare packages pruned
-- Create the necessary virtual environments
-- Install the vendored packages to the specified directory
 
 ### List Built-in Packages
 
@@ -72,7 +120,30 @@ vendorpy isbuiltin fastapi  # Built-in package
 vendorpy isbuiltin flask    # Not built-in, needs vendoring
 ```
 
+You can also automatically add non-built-in packages to your vendor.txt file:
+
+```bash
+vendorpy isbuiltin flask --add  # Checks and adds to vendor.txt if needed
+```
+
 ### Command Options
+
+#### Auto-Vendor Command
+
+```
+Options:
+  -r, --requirements-file PATH    Path to the requirements.txt file to
+                                  generate  [default: requirements.txt]
+  -v, --vendor-file PATH          Path to the vendor.txt file to generate
+                                  [default: vendor.txt]
+  -d, --vendor-dir PATH           Directory to install vendored packages to
+                                  [default: src/vendor]
+  -p, --python-version TEXT       Python version to use for vendoring (must be
+                                  3.12 for Cloudflare Workers)  [default: 3.12]
+  --help                          Show this message and exit.
+```
+
+#### Vendor Command
 
 ```
 Options:
@@ -88,6 +159,27 @@ Options:
                                   Skip built-in Cloudflare packages in
                                   requirements.txt  [default: skip-built-in]
   --help                          Show this message and exit.
+```
+
+#### IsBuiltin Command
+
+```
+Options:
+  -a, --add                       Add the package to vendor.txt if it's not built-in
+  -v, --vendor-file PATH          Path to the vendor.txt file
+                                  [default: vendor.txt]
+  --help                          Show this message and exit.
+```
+
+## Cloudflare Worker Configuration
+
+After vendoring your packages, make sure to configure your `wrangler.toml` file to include the vendor directory:
+
+```toml
+[[rules]]
+globs = ["vendor/**"]
+type = "Data"
+fallthrough = true
 ```
 
 ## Error Handling and Troubleshooting

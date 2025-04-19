@@ -2,8 +2,10 @@
 Utility functions for the vendorpy CLI.
 """
 
+import json
 import subprocess
 from pathlib import Path
+from typing import List, Dict, Set
 
 # List of built-in packages available in Cloudflare Workers
 # This list is based on the documentation and should be updated as needed
@@ -56,6 +58,119 @@ CLOUDFLARE_BUILT_IN_PACKAGES = [
     "ssl",
     "starlette",
 ]
+
+
+def extract_project_dependencies() -> Set[str]:
+    """
+    Extract all project dependencies using uv export.
+
+    Returns:
+        Set of package names that the project depends on
+
+    Raises:
+        RuntimeError: If uv is not available or if the command fails
+    """
+    try:
+        # Run uv export to get all dependencies from the lockfile
+        result = subprocess.run(
+            ["uv", "export", "--format", "json"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )  # nosec B603
+
+        # Parse the JSON output
+        packages_data = json.loads(result.stdout)
+
+        # Extract package names (without versions)
+        package_names = set()
+
+        # Process the dependencies structure from uv export
+        if "dependencies" in packages_data:
+            for package_name, package_info in packages_data["dependencies"].items():
+                # Normalize package name (lowercase, replace hyphens with underscores)
+                normalized_name = package_name.lower().replace("-", "_")
+                package_names.add(normalized_name)
+
+        return package_names
+    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as err:
+        error_output = getattr(err, "stderr", "Unknown error")
+        raise RuntimeError(
+            f"Failed to extract project dependencies: {error_output}"
+        ) from err
+    except FileNotFoundError as err:
+        raise RuntimeError(
+            "uv command not found. Please install uv using 'pip install uv'"
+        ) from err
+
+
+def detect_packages_to_vendor() -> Dict[str, List[str]]:
+    """
+    Detect which packages need to be vendored by comparing project dependencies
+    with built-in Cloudflare packages.
+
+    Returns:
+        Dictionary with 'vendor' and 'built_in' keys, containing lists of package names
+
+    Raises:
+        RuntimeError: If dependency extraction fails
+    """
+    # Get all project dependencies
+    project_dependencies = extract_project_dependencies()
+
+    # Normalize built-in package names for comparison
+    normalized_built_in = {
+        pkg.lower().replace("-", "_") for pkg in CLOUDFLARE_BUILT_IN_PACKAGES
+    }
+
+    # Determine which packages need to be vendored
+    to_vendor = project_dependencies - normalized_built_in
+    built_in = project_dependencies & normalized_built_in
+
+    # Get original package names for the ones that need to be vendored
+    # This is needed because we normalized the names for comparison
+    vendor_packages = []
+    for package in to_vendor:
+        # Use the original name if available
+        # Note: This is a simple implementation that assumes the package name
+        # in the output of uv export is the same as what should be in vendor.txt
+        vendor_packages.append(package.replace("_", "-"))
+
+    # Get original package names for built-in packages
+    built_in_packages = []
+    for built_in_pkg in built_in:
+        # Find the exact package name with correct casing
+        exact_name = next(
+            (
+                pkg
+                for pkg in CLOUDFLARE_BUILT_IN_PACKAGES
+                if pkg.lower().replace("-", "_") == built_in_pkg
+            ),
+            built_in_pkg,  # Use normalized name if exact match not found
+        )
+        built_in_packages.append(exact_name)
+
+    return {
+        "vendor": sorted(vendor_packages),
+        "built_in": sorted(built_in_packages),
+    }
+
+
+def create_vendor_file(vendor_packages: List[str], vendor_file: Path) -> None:
+    """
+    Create or update the vendor.txt file with packages that need to be vendored.
+
+    Args:
+        vendor_packages: List of package names to vendor
+        vendor_file: Path to the vendor.txt file
+    """
+    # Create vendor file directory if it doesn't exist
+    vendor_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write packages to vendor.txt
+    with open(vendor_file, "w") as f:
+        for package in vendor_packages:
+            f.write(f"{package}\n")
 
 
 def create_virtual_env(python_version: str = "3.12") -> Path:
