@@ -4,8 +4,10 @@ Utility functions for the vendorpy CLI.
 
 import json
 import subprocess
+import tomli
+import tomli_w
 from pathlib import Path
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional, Tuple, Union, Any
 
 # List of built-in packages available in Cloudflare Workers
 # This list is based on the documentation and should be updated as needed
@@ -352,3 +354,205 @@ def install_packages_to_vendor(
     except subprocess.CalledProcessError as err:
         error_output = err.stderr if err.stderr else "Unknown error"
         raise RuntimeError(f"Failed to install packages: {error_output}") from err
+
+
+def find_wrangler_config() -> Optional[Tuple[Path, str]]:
+    """
+    Find the wrangler configuration file in the current directory.
+
+    Returns:
+        Optional tuple containing the path to the wrangler config file and its type ('toml' or 'jsonc')
+        or None if no wrangler configuration file is found
+    """
+    # Check for wrangler.toml first (more common)
+    wrangler_toml = Path("wrangler.toml")
+    if wrangler_toml.exists():
+        return wrangler_toml, "toml"
+
+    # Check for wrangler.jsonc as an alternative
+    wrangler_jsonc = Path("wrangler.jsonc")
+    if wrangler_jsonc.exists():
+        return wrangler_jsonc, "jsonc"
+
+    # No wrangler config found
+    return None
+
+
+def is_vendor_rule_present(
+    config_data: Union[Dict[str, Any], str], config_type: str
+) -> bool:
+    """
+    Check if the vendor rule is already present in the configuration.
+
+    Args:
+        config_data: The parsed configuration data or content string
+        config_type: Type of configuration file ('toml' or 'jsonc')
+
+    Returns:
+        True if the vendor rule is present, False otherwise
+    """
+    if config_type == "toml":
+        if not isinstance(config_data, dict):
+            return False
+
+        # Check if rules exist and contain vendor configuration
+        if "rules" not in config_data:
+            return False
+
+        rules = config_data.get("rules", [])
+        for rule in rules:
+            if (
+                isinstance(rule, dict)
+                and rule.get("globs") == ["vendor/**"]
+                and rule.get("type") == "Data"
+                and rule.get("fallthrough") is True
+            ):
+                return True
+
+        return False
+
+    elif config_type == "jsonc":
+        # For JSONC, we'll check the string content since parsing JSONC is more complex
+        vendor_pattern = '"globs":\\s*\\[\\s*"vendor/\\*\\*"\\s*\\]'
+        data_pattern = '"type":\\s*"Data"'
+        fallthrough_pattern = '"fallthrough":\\s*true'
+
+        import re
+
+        if (
+            isinstance(config_data, str)
+            and re.search(vendor_pattern, config_data)
+            and re.search(data_pattern, config_data)
+            and re.search(fallthrough_pattern, config_data)
+        ):
+            return True
+
+        return False
+
+    return False
+
+
+def add_vendor_rule_to_config(config_path: Path, config_type: str) -> bool:
+    """
+    Add vendor rule to wrangler configuration if not already present.
+
+    Args:
+        config_path: Path to the configuration file
+        config_type: Type of configuration file ('toml' or 'jsonc')
+
+    Returns:
+        True if the rule was added or already present, False if there was an error
+    """
+    try:
+        if config_type == "toml":
+            # Read the TOML file
+            with open(config_path, "rb") as f:
+                config_data = tomli.load(f)
+
+            # Check if the rule is already present
+            if is_vendor_rule_present(config_data, config_type):
+                return True
+
+            # Add the rule
+            if "rules" not in config_data:
+                config_data["rules"] = []
+
+            vendor_rule = {"globs": ["vendor/**"], "type": "Data", "fallthrough": True}
+            config_data["rules"].append(vendor_rule)
+
+            # Write the updated TOML file
+            with open(config_path, "wb") as f:
+                tomli_w.dump(config_data, f)
+
+            return True
+
+        elif config_type == "jsonc":
+            # Read the JSONC file
+            with open(config_path, "r") as f:
+                content = f.read()
+
+            # Check if the rule is already present
+            if is_vendor_rule_present(content, config_type):
+                return True
+
+            # Simple JSON modification that preserves comments
+            # Find the position to insert the rule
+            import re
+
+            # If there's already a rules array, we'll add to it
+            rules_match = re.search(r'"rules"\s*:\s*\[\s*', content)
+            if rules_match:
+                # Find the end of the rules array
+                end_pos = rules_match.end()
+                # Insert the vendor rule at the beginning of the rules array
+                vendor_rule = """
+  {
+    "globs": ["vendor/**"],
+    "type": "Data",
+    "fallthrough": true
+  },"""
+                # Insert the rule after the opening bracket of the rules array
+                new_content = content[:end_pos] + vendor_rule + content[end_pos:]
+            else:
+                # If there's no rules array, we'll need to add it
+                # Find the last closing brace
+                last_brace = content.rstrip().rfind("}")
+                if last_brace == -1:
+                    # Invalid JSON
+                    return False
+
+                vendor_rule = """
+  "rules": [
+    {
+      "globs": ["vendor/**"],
+      "type": "Data",
+      "fallthrough": true
+    }
+  ]"""
+                # If there are already properties, add a comma
+                if content[:last_brace].rstrip().endswith("}") or content[
+                    :last_brace
+                ].rstrip().endswith("]"):
+                    vendor_rule = "," + vendor_rule
+
+                # Insert the rules array before the final closing brace
+                new_content = content[:last_brace] + vendor_rule + content[last_brace:]
+
+            # Write the updated JSONC file
+            with open(config_path, "w") as f:
+                f.write(new_content)
+
+            return True
+
+        return False
+
+    except Exception as e:
+        # Log the error but don't raise it - we don't want to stop the vendoring process
+        # if the wrangler config update fails
+        import logging
+
+        logging.error(f"Error updating wrangler config: {e}")
+        return False
+
+
+def configure_wrangler_for_vendor() -> Optional[Tuple[bool, str]]:
+    """
+    Configure wrangler.toml or wrangler.jsonc to include vendor directory.
+
+    Returns:
+        Tuple containing success status and message, or None if no wrangler config was found
+    """
+    # Find the wrangler configuration file
+    config_result = find_wrangler_config()
+    if not config_result:
+        return None
+
+    config_path, config_type = config_result
+
+    # Add vendor rule to config
+    success = add_vendor_rule_to_config(config_path, config_type)
+
+    if success:
+        return True, f"Successfully configured {config_path.name} for vendoring"
+    else:
+        return False, f"Failed to configure {config_path.name} for vendoring"

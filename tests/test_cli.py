@@ -201,3 +201,139 @@ def test_isbuiltin_with_add_flag(tmp_path):
     with open(vendor_file, "r") as f:
         content = f.read()
         assert "flask" in content
+
+
+@patch("vendorpy.cli.detect_packages_to_vendor")
+@patch("vendorpy.cli.create_vendor_file")
+@patch("vendorpy.cli.generate_requirements")
+@patch("vendorpy.cli.create_virtual_env")
+@patch("vendorpy.cli.create_pyodide_env")
+@patch("vendorpy.cli.install_packages_to_vendor")
+@patch("vendorpy.cli.configure_wrangler_for_vendor")
+def test_auto_vendor_command_with_wrangler_config(
+    mock_configure_wrangler,
+    mock_install_packages,
+    mock_create_pyodide_env,
+    mock_create_virtual_env,
+    mock_generate_requirements,
+    mock_create_vendor_file,
+    mock_detect_packages,
+    tmp_path,
+):
+    """Test the auto-vendor command with wrangler configuration."""
+    # Mock the detection of packages
+    mock_detect_packages.return_value = {
+        "vendor": ["jinja2", "markupsafe"],
+        "built_in": ["fastapi", "requests"],
+    }
+
+    # Mock the creation of environments
+    mock_create_virtual_env.return_value = Path("/mock/venv")
+    mock_create_pyodide_env.return_value = Path("/mock/pyodide-venv")
+
+    # Mock successful wrangler configuration
+    mock_configure_wrangler.return_value = (
+        True,
+        "Successfully configured wrangler.toml for vendoring",
+    )
+
+    vendor_file = tmp_path / "vendor.txt"
+    requirements_file = tmp_path / "requirements.txt"
+    vendor_dir = tmp_path / "vendor"
+
+    # Run the command
+    runner = TyperCliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "auto-vendor",
+            "--vendor-file",
+            str(vendor_file),
+            "--requirements-file",
+            str(requirements_file),
+            "--vendor-dir",
+            str(vendor_dir),
+        ],
+    )
+
+    # Check the command ran successfully
+    assert result.exit_code == 0
+
+    # Verify our mocks were called correctly
+    mock_detect_packages.assert_called_once()
+    mock_create_vendor_file.assert_called_once_with(
+        ["jinja2", "markupsafe"], vendor_file
+    )
+    mock_generate_requirements.assert_called_once_with(requirements_file)
+    mock_create_virtual_env.assert_called_once()
+    mock_create_pyodide_env.assert_called_once_with(Path("/mock/venv"))
+    mock_install_packages.assert_called_once_with(
+        Path("/mock/pyodide-venv"), vendor_file, vendor_dir
+    )
+    mock_configure_wrangler.assert_called_once()
+
+    # Check the output for expected content
+    assert "Successfully vendored 2 packages" in result.stdout
+    assert "Configuring wrangler for vendoring" in result.stdout
+    assert "Successfully configured wrangler.toml" in result.stdout
+
+
+@patch("vendorpy.cli.detect_packages_to_vendor")
+@patch("vendorpy.cli.create_vendor_file")
+@patch("vendorpy.cli.generate_requirements")
+@patch("vendorpy.cli.create_virtual_env")
+@patch("vendorpy.cli.create_pyodide_env")
+@patch("vendorpy.cli.install_packages_to_vendor")
+@patch("vendorpy.cli.configure_wrangler_for_vendor")
+def test_auto_vendor_command_no_wrangler(
+    mock_configure_wrangler,
+    mock_install_packages,
+    mock_create_pyodide_env,
+    mock_create_virtual_env,
+    mock_generate_requirements,
+    mock_create_vendor_file,
+    mock_detect_packages,
+    tmp_path,
+):
+    """Test the auto-vendor command when no wrangler config is found."""
+    # Mock the detection of packages
+    mock_detect_packages.return_value = {
+        "vendor": ["jinja2", "markupsafe"],
+        "built_in": ["fastapi", "requests"],
+    }
+
+    # Mock the creation of environments
+    mock_create_virtual_env.return_value = Path("/mock/venv")
+    mock_create_pyodide_env.return_value = Path("/mock/pyodide-venv")
+
+    # Mock no wrangler config found
+    mock_configure_wrangler.return_value = None
+
+    vendor_file = tmp_path / "vendor.txt"
+    requirements_file = tmp_path / "requirements.txt"
+    vendor_dir = tmp_path / "vendor"
+
+    # Run the command
+    runner = TyperCliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "auto-vendor",
+            "--vendor-file",
+            str(vendor_file),
+            "--requirements-file",
+            str(requirements_file),
+            "--vendor-dir",
+            str(vendor_dir),
+        ],
+    )
+
+    # Check the command ran successfully
+    assert result.exit_code == 0
+
+    # Verify configure_wrangler_for_vendor was called
+    mock_configure_wrangler.assert_called_once()
+
+    # Check the output for expected content
+    assert "No wrangler.toml or wrangler.jsonc found" in result.stdout
+    assert "Manual Configuration Required" in result.stdout

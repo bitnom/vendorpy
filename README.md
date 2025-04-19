@@ -41,6 +41,7 @@ This will:
 4. Generate a requirements.txt file with built-in packages pruned
 5. Set up the necessary virtual environments
 6. Vendor the required packages to src/vendor
+7. Automatically configure your wrangler.toml or wrangler.jsonc file
 
 Example output:
 ```
@@ -64,6 +65,11 @@ Example output:
 ✅ Created vendor.txt
 
 ...
+
+╭────────── Step 5: Wrangler Configuration ──────────╮
+│ Configuring wrangler for vendoring                 │
+╰────────────────────────────────────────────────────╯
+✅ Successfully configured wrangler.toml for vendoring
 ```
 
 ### Manual Vendoring Process
@@ -173,7 +179,7 @@ Options:
 
 ## Cloudflare Worker Configuration
 
-After vendoring your packages, make sure to configure your `wrangler.toml` file to include the vendor directory:
+After vendoring your packages, Vendorpy will automatically configure your `wrangler.toml` or `wrangler.jsonc` file to include the vendor directory:
 
 ```toml
 [[rules]]
@@ -181,6 +187,8 @@ globs = ["vendor/**"]
 type = "Data"
 fallthrough = true
 ```
+
+If no wrangler configuration file is found, Vendorpy will show instructions for manual configuration.
 
 ## Error Handling and Troubleshooting
 

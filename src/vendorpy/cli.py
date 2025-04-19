@@ -17,6 +17,7 @@ from rich.table import Table
 
 from vendorpy.utils import (
     CLOUDFLARE_BUILT_IN_PACKAGES,
+    configure_wrangler_for_vendor,
     create_pyodide_env,
     create_virtual_env,
     create_vendor_file,
@@ -181,19 +182,52 @@ def auto_vendor(
             )
         )
 
-        console.print("\n[bold]Next steps:[/bold]")
-        console.print("1. Make sure your wrangler.toml includes the vendor directory:")
+        # Configure wrangler.toml or wrangler.jsonc
         console.print(
-            """
+            Panel.fit(
+                "Configuring wrangler for vendoring",
+                title="[bold green]Step 5: Wrangler Configuration[/bold green]",
+            )
+        )
+
+        config_result = configure_wrangler_for_vendor()
+
+        if config_result is None:
+            console.print(
+                Panel.fit(
+                    "No wrangler.toml or wrangler.jsonc found in the current directory.\n\n"
+                    "Please manually configure your wrangler file to include the vendor directory:\n"
+                    """
 [[rules]]
 globs = ["vendor/**"]
 type = "Data"
 fallthrough = true
-        """,
-            style="green",
-        )
-        console.print("2. Import your vendored packages in your code")
-        console.print("3. Run 'wrangler dev' to test your worker")
+                    """,
+                    title="[bold yellow]Manual Configuration Required[/bold yellow]",
+                )
+            )
+        else:
+            success, message = config_result
+            if success:
+                console.print(f"✅ {message}")
+            else:
+                console.print(
+                    Panel.fit(
+                        f"{message}\n\n"
+                        "Please manually add the following to your wrangler configuration:\n"
+                        """
+[[rules]]
+globs = ["vendor/**"]
+type = "Data"
+fallthrough = true
+                        """,
+                        title="[bold yellow]Manual Configuration Required[/bold yellow]",
+                    )
+                )
+
+        console.print("\n[bold]Next steps:[/bold]")
+        console.print("1. Import your vendored packages in your code")
+        console.print("2. Run 'wrangler dev' to test your worker")
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e!s}")
