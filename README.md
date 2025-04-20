@@ -15,6 +15,8 @@ Vendorpy is a command-line tool that automates the process of vendoring Python p
 
 ## Installation
 
+**WARNING: Any pre-1.0 release of this application may contain unvetted [*vibe-code*](https://en.wikipedia.org/wiki/Vibe_coding)**
+
 ```bash
 pip install vendorpy
 ```
